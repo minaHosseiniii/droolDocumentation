@@ -1,0 +1,22 @@
+package rules.lesson4
+
+import org.example.util.OutputDisplay;
+import org.example.model.*;
+
+global OutputDisplay showResult;
+
+rule "Account group1"
+    ruleflow-group "group1"
+    when
+        Account()
+    then
+        showResult.showText("Account in group 1");
+end
+
+rule "Account group2"
+    ruleflow-group "group2"
+    when
+        Account()
+    then
+        showResult.showText("Account in group 2");
+end

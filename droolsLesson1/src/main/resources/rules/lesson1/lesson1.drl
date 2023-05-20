@@ -1,0 +1,56 @@
+package rules.lesson1
+import org.example.model.Account;
+import org.example.model.CashFlow;
+import org.example.util.OutputDisplay;
+import org.example.model.AccountingPeriod;
+
+global OutputDisplay showResult;
+
+rule "First Rule"
+
+    when
+        Account()
+    then
+        showResult.showText("The account existed");
+end
+
+rule "Revisited AccountingPeriod"
+    when
+        CashFlow()
+    then
+     showResult.showText("Cash flow exist, inserting an accounting period");
+     AccountingPeriod accountingPeriod = new AccountingPeriod();
+     insert(accountingPeriod);
+end
+
+rule "Rule on accounting period that are inserting"
+    when
+        AccountingPeriod()
+    then
+        showResult.showText("Accounting period exists");
+end
+
+rule "Credit rule"
+
+    when
+        $cash : CashFlow($accno : accountNo, type == CREDIT)
+        $acc : Account(accountno == $accno)
+
+    then
+        $acc.setBalance($acc.getBalance() + $cash.getAmount());
+        showResult.showText("Account no " + $acc.getAccountno() + " has now a balance of " + $acc.getBalance());
+
+end
+
+
+rule "Debit rule"
+    when
+        $cash: CashFlow($aDate: mvtDate, $accno : accountNo, type == DEBIT)
+        $acc: Account(accountno == $accno)
+        $accPeriod: AccountingPeriod(startDate <= $aDate && endDate >= $aDate)
+    then
+        $acc.setBalance($acc.getBalance() - $cash.getAmount());
+        showResult.showText("Account no " + $acc.getAccountno() +
+         " has now a balance of " + $acc.getBalance());
+end
+

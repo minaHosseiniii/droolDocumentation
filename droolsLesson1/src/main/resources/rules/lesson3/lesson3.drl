@@ -1,0 +1,116 @@
+package rules.lesson3
+import org.example.model.*;
+import org.example.util.OutputDisplay;
+import org.example.repositories.services.CustomerService;
+import java.util.*;
+
+global OutputDisplay showResult;
+global CustomerService customerService;
+
+rule "The cash flow can be a credit or a debit"
+    when
+        $cash: CashFlow(type in (CREDIT, DEBIT))
+    then
+        showResult.showText("the cash flow is credit or debit");
+end
+
+
+rule "Accesor"
+    when
+        $cash: PrivateAccount(owner.name == "Mina")
+
+    then
+        showResult.showText("Account is owned by Mina");
+end
+
+rule "infixAnd"
+    when
+        ($c1: Customer(country == "GB") and PrivateAccount(owner == $c1))
+        or
+        ($c1: Customer(country == "US") and PrivateAccount(owner == $c1))
+    then
+        showResult.showText("Person lives in US or GB");
+end
+
+rule "not customer"
+when
+    not Customer()
+then
+    showResult.showText("No Customer");
+end
+
+rule "exists"
+    when
+        exists Account()
+    then
+        showResult.showText("The account exists");
+end
+
+
+rule "For all"
+    when
+        forall( Account(    $no: accountno)
+                CashFlow(   accountNo == $no))
+    then
+        showResult.showText("All cash flows are related to an account");
+end
+
+rule "FromCondition"
+    when
+        $c: Customer()
+        $cc: Customer(name == $c.name, surname == $c.surname, country != $c.country) from customerService.getListCustomer();
+    then
+    showResult.showText("found same customer in 2 countries");
+end
+
+
+rule "More then 2 CashFlow Line"
+    when
+        $c : Account( $acc : accountno )
+        $p : AccountingPeriod ($sDate : startDate ,$eDate : endDate )
+        $list : ArrayList(size >= 2 )
+              from collect( CashFlow( mvtDate >= $sDate && mvtDate  <= $eDate,accountNo == $acc ) )
+
+    then
+        showResult.showText("Found more than 2 CashFlow Lines");
+        showResult.showText("<<<<<<<<<<");
+        for (Object ff : $list){
+            showResult.showText(ff.toString());
+        }
+        showResult.showText(">>>>>>>>>>>>>>>>");
+end
+
+rule "Numbers of  CashFlow Line"
+    when
+        $c : Account( $acc : accountno )
+        $p : AccountingPeriod ($sDate : startDate ,$eDate : endDate )
+        $list : ArrayList( )
+              from collect( CashFlow( mvtDate >= $sDate && mvtDate  <= $eDate,accountNo == $acc ) )
+
+    then
+        showResult.showText("Found "+$list+" more than 2 CashFlow Lines");
+end
+
+rule "Credit and debit rule"
+    when
+        $c: Account($acc: accountno)
+        $p: AccountingPeriod($sDate: startDate, $eDate: endDate)
+        $totalCredit : Number( doubleValue > 100 )
+                     from accumulate( CashFlow( type ==CashFlow.CREDIT,$value : amount, mvtDate >= $sDate && mvtDate  <= $eDate,accountNo == $acc ),
+                                      init( double total = 0; ),
+                                      action( total += $value; ),
+                                      reverse( total -= $value; ),
+                                      result( total ) )
+        $totalDebit: Number(doubleValue > 100)
+                     from accumulate(CashFlow(type == DEBIT, mvtDate >= $sDate && mvtDate <= $eDate, accountNo == $acc, $value : amount),
+                                    init(double total = 0;),
+                                    action(total += $value;),
+                                    reverse(total -= $value;),
+                                    result(total))
+    then
+        showResult.showText(" Found " + $totalCredit + " as a credit");
+        showResult.showText(" Found " + $totalDebit + "  as a debit");
+
+end
+
+
